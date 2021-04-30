@@ -78,6 +78,8 @@ def main():
    
     filename = os.path.basename( args.input)
     basename = filename.split('.')
+    assembly = basename[0].split('_')
+
     print(f'\nBuscando genes MLST ( acnB, gap, glta, gyrB, pgi, rpoD ) en {filename}')
     print('Ejecutando nhmmer....')
     subprocess.call(['nhmmer','--cpu', str(args.threads), '-E', str(args.evalue) ,'-o', 'result_nhmmer.txt','--tblout', 'tmp.txt', 'hmm/mlts.hmm', args.input ])
@@ -86,15 +88,20 @@ def main():
     tblout = open('tmp.txt')
     lines = tblout.readlines()
     mlst = parseHmmerResult(lines)
-    print("Generando archivos fasta MLST...")
-    genes, sequences = makeFasta( mlst, args.input)
-    SeqIO.write(genes, f'{basename[0]}_MLST.fna', "fasta")
-    print("Concatenando archivos fasta MLST...")
-    sequence = "".join(sequences)
-    rec1 = SeqRecord( Seq(str(sequence)), id='S01_mlst', description= '[acnB, gap, glta, gyrB, pgi, rpoD]' )
-    SeqIO.write(rec1, 'S01_MLST.fna', "fasta")
-    os.remove("tmp.txt") 
     
+    genes, sequences = makeFasta( mlst, args.input)
+    
+    print("Generando archivos fasta MLST...")
+    SeqIO.write(genes, f'{basename[0]}_MLST.fna', "fasta")
+    
+    print("Concatenando archivos fasta MLST...")
+
+    rec1 = SeqRecord( Seq("".join(sequences)), id=f'{assembly[0]}_mlst', description= '[acnB, gap, glta, gyrB, pgi, rpoD]' )
+    SeqIO.write(rec1, f'{assembly[0]}_MLST.fna', "fasta")
+    
+    #Removiendo archivo temporales
+    os.remove("tmp.txt") 
+    print('|||||||RESULTADOS|||||||\n')    
     print('\nMLST[cant.]\tSeqID')
     print('-----------------------')
     print(f'acnb [{len(mlst[0])}]:\t{mlst[0][0]}')
@@ -103,6 +110,8 @@ def main():
     print(f'gyrb [{len(mlst[3])}]:\t{mlst[3][0]}')
     print(f'pgi [{len(mlst[4])}]:\t{mlst[4][0]}')
     print(f'rpoD [{len(mlst[5])}]:\t{mlst[5][0]}')
-
+    print('\n__________________________________')
+    print(f'GENES MLST: {basename[0]}_MLST.fna')
+    print(f'GENES MLST CONCAT: {assembly[0]}_MLST.fna')
 if __name__ == '__main__':
     main()
